@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WM Tech Integrations Explorer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f5f7;
+      color: #222;
+    }
+
+    header {
+      padding: 12px 20px;
+      background: #1e88e5;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    header .breadcrumbs {
+      font-size: 13px;
+      opacity: 0.95;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .crumb {
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .crumb.current {
+      cursor: default;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .crumb-sep {
+      opacity: 0.7;
+    }
+
+    header button {
+      border: none;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      white-space: nowrap;
+    }
+    header button:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    main {
+      padding: 20px;
+      min-height: calc(100vh - 52px);
+    }
+
+    .view {
+      display: none;
+    }
+    .view.active {
+      display: block;
+    }
+
+    /* Home view */
+    .center-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 92px);
+    }
+
+    .big-card {
+      padding: 40px 60px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      font-size: 24px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .big-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.16);
+    }
+
+    /* Systems grid */
+    .systems-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .system-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      font-weight: 600;
+      border: 1px solid #dde3ea;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease;
+    }
+
+    .system-card:hover {
+      transform: translateY(-2px);
+      border-color: #1e88e5;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    }
+
+    /* Oracle view layout */
+    .oracle-layout {
+      max-width: 1000px;
+      margin-top: 16px;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid #dde3ea;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .panel h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #777;
+      margin-top: 8px;
+    }
+
+    /* Flowchart styling */
+    .flow-container {
+      width: 100%;
+      height: 480px;
+      border-radius: 10px;
+      background: #fafbff;
+      border: 1px solid #dde3ea;
+      position: relative;
+      overflow: hidden;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .node-rect {
+      fill: #ffffff;
+      stroke: #1e88e5;
+      stroke-width: 1.4;
+      rx: 10;
+      ry: 10;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.15));
+      cursor: default;
+    }
+
+    .node-rect.secondary {
+      stroke: #90a4ae;
+    }
+
+    .node-label {
+      font-size: 13px;
+      font-weight: 600;
+      fill: #263238;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .node-sub {
+      font-size: 10px;
+      fill: #607d8b;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+
+    .arrow-path {
+      stroke: #9e9e9e;
+      stroke-width: 1.8;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+
+    .arrow-path.outbound {
+      stroke: #1e88e5;
+    }
+    .arrow-path.inbound {
+      stroke: #43a047;
+    }
+
+    .integration-label {
+      font-size: 11px;
+      fill: #1e88e5;
+      cursor: pointer;
+      text-decoration: underline;
+      user-select: none;
+    }
+
+    .integration-label:hover {
+      fill: #0d47a1;
+    }
+
+    /* Integration details page */
+    #int-body {
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+    #int-body a {
+      color: #1e88e5;
+      text-decoration: none;
+    }
+    #int-body a:hover {
+      text-decoration: underline;
+    }
+    .empty-hint {
+      font-size: 12px;
+      color: #777;
+    }
+
+    @media (max-width: 900px) {
+      .flow-container {
+        height: 360px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>WM Tech Integrations Explorer</div>
+    <div class="breadcrumbs" id="breadcrumbs"></div>
+    <button id="back-button" style="display:none;">⬅ Back</button>
+  </header>
+
+  <main>
+    <!-- View 1: Home (single WM Tech Integrations box) -->
+    <section id="view-home" class="view active">
+      <div class="center-container">
+        <div class="big-card" id="btn-open-systems">
+          WM Tech Integrations
+        </div>
+      </div>
+    </section>
+
+    <!-- View 2: Systems grid -->
+    <section id="view-systems" class="view">
+      <h2>Select a System</h2>
+      <p style="font-size:13px;color:#555;">
+        Click on a system to view its integration landscape.
+      </p>
+      <div class="systems-grid">
+        <div class="system-card" data-system="oracle">Oracle</div>
+        <div class="system-card">Coupa</div>
+        <div class="system-card">Kyriba</div>
+        <div class="system-card">Onesource</div>
+        <div class="system-card">OneStream</div>
+        <div class="system-card">SAP</div>
+        <div class="system-card">JPMC</div>
+        <div class="system-card">BOFA</div>
+      </div>
+      <p style="margin-top:16px;font-size:11px;color:#888;">
+        (Currently, the detailed flowchart is implemented for Oracle as an example.
+        You can copy this pattern for other systems.)
+      </p>
+    </section>
+
+    <!-- View 3: Oracle integrations as flowchart -->
+    <section id="view-oracle" class="view">
+      <h2>Oracle – Integration Flow</h2>
+      <p style="font-size:13px;color:#555;margin-top:4px;">
+        Flowchart showing inbound and outbound integrations between Oracle and connected systems.
+        Click an integration ID label (e.g., WM_ERP_I_263) on the arrows to open its details page.
+      </p>
+
+      <div class="oracle-layout">
+        <div class="panel">
+          <h3>Oracle-Centric Flow</h3>
+          <div class="flow-container">
+            <svg viewBox="0 0 800 480">
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#9e9e9e" />
+                </marker>
+              </defs>
+
+              <!-- Nodes -->
+              <!-- Oracle (center) -->
+              <rect class="node-rect" x="330" y="200" width="140" height="60"></rect>
+              <text class="node-label" x="400" y="225">Oracle</text>
+              <text class="node-sub" x="400" y="242">Core ERP</text>
+
+              <!-- SAP (top-left) -->
+              <rect class="node-rect secondary" x="90" y="80" width="140" height="50"></rect>
+              <text class="node-label" x="160" y="105">SAP</text>
+              <text class="node-sub" x="160" y="120">ERP / Financials</text>
+
+              <!-- JPMC (top-right) -->
+              <rect class="node-rect secondary" x="570" y="80" width="160" height="50"></rect>
+              <text class="node-label" x="650" y="105">JPMC</text>
+              <text class="node-sub" x="650" y="120">Bank (JPMorgan)</text>
+
+              <!-- BOFA (bottom-right) -->
+              <rect class="node-rect secondary" x="570" y="320" width="160" height="50"></rect>
+              <text class="node-label" x="650" y="345">BOFA</text>
+              <text class="node-sub" x="650" y="360">Bank of America</text>
+
+              <!-- Onesource (bottom-left) -->
+              <rect class="node-rect secondary" x="90" y="320" width="160" height="50"></rect>
+              <text class="node-label" x="170" y="345">Onesource</text>
+              <text class="node-sub" x="170" y="360">Tax / Compliance</text>
+
+              <!-- Straight / right-angle arrows + labels -->
+
+              <!-- Oracle → SAP (Outbound, WM_ERP_I_263) -->
+              <path class="arrow-path outbound"
+                    d="M 330 230 L 260 230 L 260 120 L 230 120" />
+              <text class="integration-label"
+                    x="250" y="215"
+                    data-int-id="WM_ERP_I_263">
+                WM_ERP_I_263 (Outbound)
+              </text>
+
+              <!-- SAP → Oracle (Inbound, WM_ERP_C_253) -->
+              <path class="arrow-path inbound"
+                    d="M 230 105 L 260 105 L 260 210 L 330 210" />
+              <text class="integration-label"
+                    x="245" y="190"
+                    data-int-id="WM_ERP_C_253">
+                WM_ERP_C_253 (Inbound)
+              </text>
+
+              <!-- Oracle → JPMC (Outbound, WM_ERP_I_301) -->
+              <path class="arrow-path outbound"
+                    d="M 470 230 L 540 230 L 540 120 L 570 120" />
+              <text class="integration-label"
+                    x="555" y="215"
+                    data-int-id="WM_ERP_I_301">
+                WM_ERP_I_301 (Outbound)
+              </text>
+
+              <!-- Oracle → BOFA (Outbound, WM_ERP_I_305) -->
+              <path class="arrow-path outbound"
+                    d="M 470 260 L 540 260 L 540 345 L 570 345" />
+              <text class="integration-label"
+                    x="555" y="280"
+                    data-int-id="WM_ERP_I_305">
+                WM_ERP_I_305 (Outbound)
+              </text>
+
+              <!-- BOFA → Oracle (Inbound, WM_ERP_C_310) -->
+              <path class="arrow-path inbound"
+                    d="M 570 345 L 540 345 L 540 250 L 470 250" />
+              <text class="integration-label"
+                    x="555" y="325"
+                    data-int-id="WM_ERP_C_310">
+                WM_ERP_C_310 (Inbound)
+              </text>
+
+              <!-- Onesource → Oracle (Inbound, WM_ERP_C_320) -->
+              <path class="arrow-path inbound"
+                    d="M 250 345 L 280 345 L 280 260 L 330 260" />
+              <text class="integration-label"
+                    x="270" y="325"
+                    data-int-id="WM_ERP_C_320">
+                WM_ERP_C_320 (Inbound)
+              </text>
+            </svg>
+          </div>
+          <p class="hint">
+            Outbound arrows are blue, inbound arrows are green.
+            Integration IDs are placed on separate rows so they don’t overlap lines or each other.
+            Click a label to open a dedicated details page.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- View 4: Integration details page -->
+    <section id="view-integration" class="view">
+      <h2 id="int-title">Integration Details</h2>
+      <p id="int-subtitle" style="font-size:13px;color:#555;margin-top:4px;"></p>
+      <div class="panel">
+        <div id="int-body" class="empty-hint">
+          Select an integration from the Oracle flowchart to see full details.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --- View management ---
+    const views = {
+      home: document.getElementById("view-home"),
+      systems: document.getElementById("view-systems"),
+      oracle: document.getElementById("view-oracle"),
+      integration: document.getElementById("view-integration"),
+    };
+
+    const breadcrumbsEl = document.getElementById("breadcrumbs");
+    const backButton = document.getElementById("back-button");
+    let viewHistory = ["home"];
+    let currentView = "home";
+    let currentIntegrationId = null;
+
+    function updateBreadcrumbs() {
+      let html = "";
+
+      function addCrumb(label, view, isCurrent) {
+        if (html) html += `<span class="crumb-sep">&gt;</span>`;
+        if (isCurrent) {
+          html += `<span class="crumb current"${view ? ` data-view="${view}"` : ""}>${label}</span>`;
+        } else {
+          html += `<span class="crumb" data-view="${view}">${label}</span>`;
+        }
+      }
+
+      if (currentView === "home") {
+        addCrumb("Home", "home", true);
+      } else if (currentView === "systems") {
+        addCrumb("Home", "home", false);
+        addCrumb("Systems", "systems", true);
+      } else if (currentView === "oracle") {
+        addCrumb("Home", "home", false);
+        addCrumb("Systems", "systems", false);
+        addCrumb("Oracle", "oracle", true);
+      } else if (currentView === "integration") {
+        addCrumb("Home", "home", false);
+        addCrumb("Systems", "systems", false);
+        addCrumb("Oracle", "oracle", false);
+        const label = currentIntegrationId || "Integration";
+        // last crumb is current, not clickable
+        if (html) html += `<span class="crumb-sep">&gt;</span>`;
+        html += `<span class="crumb current">${label}</span>`;
+      }
+
+      breadcrumbsEl.innerHTML = html;
+    }
+
+    function applyView(viewName) {
+      Object.values(views).forEach(v => v.classList.remove("active"));
+      views[viewName].classList.add("active");
+      currentView = viewName;
+
+      if (viewName === "home") {
+        backButton.style.display = "none";
+      } else {
+        backButton.style.display = "inline-block";
+      }
+
+      updateBreadcrumbs();
+    }
+
+    function setView(viewName) {
+      const last = viewHistory[viewHistory.length - 1];
+      if (last !== viewName) {
+        viewHistory.push(viewName);
+      }
+      applyView(viewName);
+    }
+
+    backButton.addEventListener("click", () => {
+      if (viewHistory.length > 1) {
+        viewHistory.pop();
+        const prev = viewHistory[viewHistory.length - 1];
+        applyView(prev);
+      }
+    });
+
+    // Clickable breadcrumbs
+    breadcrumbsEl.addEventListener("click", (e) => {
+      const span = e.target.closest(".crumb");
+      if (!span || span.classList.contains("current")) return;
+      const view = span.dataset.view;
+      if (!view) return;
+
+      if (view === "home") {
+        viewHistory = ["home"];
+      } else if (view === "systems") {
+        viewHistory = ["home", "systems"];
+      } else if (view === "oracle") {
+        viewHistory = ["home", "systems", "oracle"];
+      }
+      applyView(view);
+    });
+
+    document.getElementById("btn-open-systems").addEventListener("click", () => {
+      setView("systems");
+    });
+
+    document.querySelectorAll(".system-card").forEach(card => {
+      card.addEventListener("click", () => {
+        const sys = card.dataset.system;
+        if (sys === "oracle") {
+          setView("oracle");
+        } else {
+          alert(`Flowchart view for "${card.textContent.trim()}" not implemented yet.\n\nYou can copy the Oracle layout and customize it for this system.`);
+        }
+      });
+    });
+
+    // --- Integration metadata ---
+    const INTEGRATIONS = {
+      "WM_ERP_I_263": {
+        id: "WM_ERP_I_263",
+        direction: "Oracle → SAP",
+        type: "Outbound",
+        description: "Outbound integration from Oracle ERP to SAP for financial data.",
+        jira: ["JIRA-1234", "JIRA-5678"],
+        leanspace: [
+          "https://wmgmt-my.sharepoint.com/:w:/g/personal/bnagesh_wm_com/IQDqf9o9vmo-T72dqCPwXO8sAeSo6ogJ3jvoexmMZvyr8Oc?e=Vw8ijJ"
+        ]
+      },
+      "WM_ERP_C_253": {
+        id: "WM_ERP_C_253",
+        direction: "SAP → Oracle",
+        type: "Inbound",
+        description: "Inbound integration from SAP into Oracle ERP.",
+        jira: ["JIRA-2233"],
+        leanspace: [
+          "https://wmgmt-my.sharepoint.com/:w:/g/personal/bnagesh_wm_com/IQDqf9o9vmo-T72dqCPwXO8sAeSo6ogJ3jvoexmMZvyr8Oc?e=Vw8ijJ"
+        ]
+      },
+      "WM_ERP_I_301": {
+        id: "WM_ERP_I_301",
+        direction: "Oracle → JPMC",
+        type: "Outbound",
+        description: "Outbound integration for payment / treasury files to JPMC.",
+        jira: [],
+        leanspace: []
+      },
+      "WM_ERP_I_305": {
+        id: "WM_ERP_I_305",
+        direction: "Oracle → BOFA",
+        type: "Outbound",
+        description: "Outbound integration from Oracle to BOFA for reconciliation / payment files.",
+        jira: ["JIRA-8899"],
+        leanspace: []
+      },
+      "WM_ERP_C_310": {
+        id: "WM_ERP_C_310",
+        direction: "BOFA → Oracle",
+        type: "Inbound",
+        description: "Inbound BOFA bank statements into Oracle.",
+        jira: ["JIRA-9900"],
+        leanspace: [
+          "https://leanspace.example.com/cases/WM_ERP_C_310"
+        ]
+      },
+      "WM_ERP_C_320": {
+        id: "WM_ERP_C_320",
+        direction: "Onesource → Oracle",
+        type: "Inbound",
+        description: "Inbound tax / compliance feeds from Onesource into Oracle.",
+        jira: [],
+        leanspace: []
+      }
+    };
+
+    const intTitleEl = document.getElementById("int-title");
+    const intSubtitleEl = document.getElementById("int-subtitle");
+    const intBodyEl = document.getElementById("int-body");
+
+    function renderIntegrationPage(intId) {
+      const data = INTEGRATIONS[intId];
+      currentIntegrationId = intId;
+
+      if (!data) {
+        intTitleEl.textContent = intId;
+        intSubtitleEl.textContent = "Integration details not configured yet.";
+        intBodyEl.textContent =
+          `No metadata configured yet for ${intId}.\n\nEdit the INTEGRATIONS object in the script to add Jira numbers and Leanspace links.`;
+        return;
+      }
+
+      intTitleEl.textContent = `${data.id} – ${data.direction}`;
+      intSubtitleEl.textContent = `${data.type} integration associated with Oracle.`;
+
+      let html = "";
+      html += `<strong>Integration ID:</strong> ${data.id}\n`;
+      html += `<strong>Direction:</strong> ${data.direction}\n`;
+      html += `<strong>Type:</strong> ${data.type}\n\n`;
+
+      if (data.description) {
+        html += `${data.description}\n\n`;
+      }
+
+      if (data.jira && data.jira.length) {
+        html += "<strong>Jira tickets:</strong>\n";
+        html += data.jira.map(j => `• ${j}`).join("\n");
+        html += "\n\n";
+      } else {
+        html += "<strong>Jira tickets:</strong> (not set)\n\n";
+      }
+
+      if (data.leanspace && data.leanspace.length) {
+        html += "<strong>Leanspace links:</strong>\n";
+        html += data.leanspace
+          .map(url => `• <a href=\"${url}\" target=\"_blank\">${url}</a>`)
+          .join("\n");
+      } else {
+        html += "<strong>Leanspace links:</strong> (not set)";
+      }
+
+      intBodyEl.innerHTML = html;
+    }
+
+    function openIntegrationPage(intId) {
+      renderIntegrationPage(intId);
+      setView("integration");
+    }
+
+    // Wire up SVG integration labels
+    document.querySelectorAll(".integration-label").forEach(label => {
+      label.addEventListener("click", () => {
+        const intId = label.getAttribute("data-int-id");
+        openIntegrationPage(intId);
+      });
+    });
+
+    // Initialize
+    applyView("home");
+  </script>
+</body>
+</html>
